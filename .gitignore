@@ -1,0 +1,14 @@
+## Cartelle compilate e temporanee
+[Bb]in/
+[Oo]bj/
+.vs/
+.vscode/
+*.user
+*.suo
+
+## Dati generati localmente
+*.db
+*.db-shm
+*.db-wal
+expenses.json
+expenses.csv
