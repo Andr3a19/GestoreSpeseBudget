@@ -8,6 +8,7 @@
         Bollette,
         Altro
     }
+
     public class Expense(decimal amount, DateOnly date, string description, Category category)
     {
         private static int _nextId = 1;

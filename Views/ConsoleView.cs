@@ -161,11 +161,11 @@ namespace GestoreSpeseBudget.Views
 
             Print(expenses);
             Console.Write("\nIndicare quale spesa vuoi modificare: ");
-
             int choice = EnterInt(1);
 
             Console.Write("\nInserire il nuovo valore dell'importo: ");
             decimal amount = EnterDecimal();
+
             string description;
             Console.Write("\nInserire la nuova descrizione della spesa: ");
             description = Console.ReadLine() ?? "";

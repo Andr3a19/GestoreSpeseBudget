@@ -29,7 +29,6 @@ namespace GestoreSpeseBudget.Repositories
                 return [];
 
             string jsonString = File.ReadAllText(_filePath);
-
             if (string.IsNullOrWhiteSpace(jsonString))
                 return [];
 
