@@ -1,22 +1,36 @@
 ﻿using GestoreSpeseBudget.Models;
+using System.Globalization;
+using System.Text;
 
-namespace GestoreSpeseBudget.Repositories
+namespace GestoreSpeseBudget.Repositories;
+
+public class CsvExpenseExporter(string filePath = "expenses.csv") : IExpenseExporter
 {
-    internal class CsvExpenseExporter
+    public void Export(IReadOnlyList<Expense> expenses)
     {
-        private readonly string _filePath;
+        var builder = new StringBuilder();
+        builder.AppendLine("Id;Data;Descrizione;Importo;Categoria");
 
-        public CsvExpenseExporter()
+        foreach (var e in expenses)
         {
-            _filePath = "expenses.csv";
+            var line = string.Join(";",
+                e.Id,
+                e.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                EscapeCsvField(e.Description),
+                e.Amount.ToString("F2", CultureInfo.InvariantCulture),
+                e.Category.ToString()
+            );
+            builder.AppendLine(line);
         }
 
-        public void Export(IReadOnlyList<Expense> expenses)
-        {
-            string header = "Id;Data;Descrizione;Importo;Categoria";
-            // Sanitize description by removing semicolons to avoid breaking CSV column alignment
-            var rows = expenses.Select(e => $"{e.Id};{e.Date};{e.Description.Replace(';', ' ')};{e.Amount};{e.Category}");
-            File.WriteAllLines(_filePath, [header, .. rows]);
-        }
+        File.WriteAllText(filePath, builder.ToString(), Encoding.UTF8);
+    }
+
+    private static string EscapeCsvField(string field)
+    {
+        if (field.Contains(';') || field.Contains('"') || field.Contains('\n') || field.Contains('\r'))
+            return $"\"{field.Replace("\"", "\"\"")}\"";
+
+        return field;
     }
 }

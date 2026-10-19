@@ -1,53 +1,82 @@
 ﻿using GestoreSpeseBudget.Data;
 using GestoreSpeseBudget.Models;
+using Microsoft.EntityFrameworkCore;
 
-namespace GestoreSpeseBudget.Repositories
+namespace GestoreSpeseBudget.Repositories;
+
+public class SqliteExpenseRepository(IDbContextFactory<ExpenseDbContext> contextFactory) : IExpenseRepository
 {
-    internal class SqliteExpenseRepository
+    public IReadOnlyList<Expense> GetAll()
     {
-        private readonly ExpenseDbContext _context;
+        using var context = contextFactory.CreateDbContext();
+        return [.. context.Expenses.AsNoTracking().OrderBy(e => e.Date)];
+    }
 
-        public SqliteExpenseRepository()
-        {
-            _context = new ExpenseDbContext();
-        }
+    public IReadOnlyList<Expense> GetByCategory(Category category)
+    {
+        using var context = contextFactory.CreateDbContext();
+        return [.. context.Expenses.AsNoTracking().Where(e => e.Category == category).OrderBy(e => e.Date)];
+    }
 
-        public void Add(Expense expense)
-        {
-            _context.Expenses.Add(expense);
-            _context.SaveChanges();
-        }
+    public Expense? GetById(int id)
+    {
+        using var context = contextFactory.CreateDbContext();
+        return context.Expenses.AsNoTracking().FirstOrDefault(e => e.Id == id);
+    }
 
-        public IReadOnlyList<Expense> GetAll()
-        {
-            return [.. _context.Expenses];
-        }
+    public decimal GetTotalAmount()
+    {
+        using var context = contextFactory.CreateDbContext();
+        // Casts to nullable decimal to safeguard against null results when tables or filters are empty
+        return context.Expenses.Sum(e => (decimal?)e.Amount) ?? 0m;
+    }
 
-        public bool Update(int id, decimal amount, string description)
-        {
-            var expense = _context.Expenses.Find(id);
+    public decimal GetMonthlyTotal(int year, int month)
+    {
+        using var context = contextFactory.CreateDbContext();
+        // Pushes aggregation to SQLite via SQL SUM, avoiding heap allocations of entire tables
+        return context.Expenses
+            .Where(e => e.Date.Year == year && e.Date.Month == month)
+            .Sum(e => (decimal?)e.Amount) ?? 0m;
+    }
 
-            if (expense == null)
-                return false;
+    public Dictionary<Category, decimal> GetSummaryByCategory()
+    {
+        using var context = contextFactory.CreateDbContext();
+        return context.Expenses
+            .GroupBy(e => e.Category)
+            .Select(group => new { Category = group.Key, Total = group.Sum(e => e.Amount) })
+            .ToDictionary(item => item.Category, item => item.Total);
+    }
 
-            expense.Amount = amount;
-            expense.Description = description;
-            _context.SaveChanges();
+    public void Add(Expense expense)
+    {
+        using var context = contextFactory.CreateDbContext();
+        context.Expenses.Add(expense);
+        context.SaveChanges();
+    }
 
-            return true;
-        }
+    public bool Update(int id, decimal amount, string description)
+    {
+        using var context = contextFactory.CreateDbContext();
+        var existing = context.Expenses.Find(id);
+        if (existing is null)
+            return false;
 
-        public bool Delete(int id)
-        {
-            var expense = _context.Expenses.Find(id);
+        existing.UpdateDetails(amount, description);
+        context.SaveChanges();
+        return true;
+    }
 
-            if (expense == null)
-                return false;
+    public bool Delete(int id)
+    {
+        using var context = contextFactory.CreateDbContext();
+        var existing = context.Expenses.Find(id);
+        if (existing is null)
+            return false;
 
-            _context.Expenses.Remove(expense);
-            _context.SaveChanges();
-
-            return true;
-        }
+        context.Expenses.Remove(existing);
+        context.SaveChanges();
+        return true;
     }
 }

@@ -1,31 +1,41 @@
-﻿namespace GestoreSpeseBudget.Models
+﻿namespace GestoreSpeseBudget.Models;
+
+public class Expense
 {
-    public enum Category
+    public int Id { get; init; }
+
+    public decimal Amount { get; private set; }
+    public DateOnly Date { get; init; }
+    public string Description { get; private set; } = string.Empty;
+    public Category Category { get; init; }
+
+    public Expense(decimal amount, DateOnly date, string description, Category category)
     {
-        Cibo,
-        Trasporti,
-        Svago,
-        Bollette,
-        Altro
+        if (amount <= 0)
+            throw new ArgumentOutOfRangeException(nameof(amount), "L'importo della spesa deve essere maggiore di zero");
+
+        if (string.IsNullOrWhiteSpace(description))
+            throw new ArgumentException("La descrizione non può essere vuota", nameof(description));
+
+        Amount = amount;
+        Date = date;
+        Description = description.Trim();
+        Category = category;
     }
 
-    public class Expense(decimal amount, DateOnly date, string description, Category category)
+    protected Expense() { }
+
+    public void UpdateDetails(decimal newAmount, string newDescription)
     {
-        private static int _nextId = 1;
-        public int Id { get; set; } = _nextId++;
-        public decimal Amount { get; set; } = amount;
-        public DateOnly Date { get; set; } = date;
-        public string Description { get; set; } = description;
-        public Category Category { get; set; } = category;
+        if (newAmount <= 0)
+            throw new ArgumentOutOfRangeException(nameof(newAmount), "L'importo della spesa deve essere maggiore di zero");
 
-        public static void SetNextId(int id)
-        {
-            _nextId = id;
-        }
+        if (string.IsNullOrWhiteSpace(newDescription))
+            throw new ArgumentException("La descrizione non può essere vuota", nameof(newDescription));
 
-        public override string ToString()
-        {
-            return $"[{Id}] {Date} - {Description} | {Amount:C} ({Category})";
-        }
+        Amount = newAmount;
+        Description = newDescription.Trim();
     }
+
+    public override string ToString() => $"[{Id}] {Date:dd/MM/yyyy} - {Description} | {Amount:C} ({Category})";
 }

@@ -1,17 +1,40 @@
-﻿using GestoreSpeseBudget.Controllers;
+﻿using GestoreSpeseBudget.Data;
+using GestoreSpeseBudget.Repositories;
+using GestoreSpeseBudget.Services;
 using GestoreSpeseBudget.Views;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using System.Text;
 
-namespace GestoreSpeseBudget
+namespace GestoreSpeseBudget;
+
+internal static class Program
 {
-    class Program
+    private static void Main()
     {
-        static void Main()
-        {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-            ExpenseController expenseController = new();
-            ConsoleView view = new(expenseController);
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
 
-            view.Start();
+        var services = new ServiceCollection();
+
+        services.AddDbContextFactory<ExpenseDbContext>(options =>
+            options.UseSqlite("Data Source=expenses.db"));
+
+        services.AddScoped<IExpenseRepository, SqliteExpenseRepository>();
+        services.AddScoped<IExpenseExporter, CsvExpenseExporter>();
+        services.AddScoped<ExpenseService>();
+        services.AddScoped<ConsoleView>();
+
+        var serviceProvider = services.BuildServiceProvider();
+
+        using (var scope = serviceProvider.CreateScope())
+        {
+            var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ExpenseDbContext>>();
+            using var dbContext = factory.CreateDbContext();
+            dbContext.Database.EnsureCreated();
         }
+
+        var view = serviceProvider.GetRequiredService<ConsoleView>();
+        view.Start();
     }
 }

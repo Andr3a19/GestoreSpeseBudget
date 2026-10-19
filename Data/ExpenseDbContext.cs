@@ -1,21 +1,21 @@
 ﻿using GestoreSpeseBudget.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace GestoreSpeseBudget.Data
+namespace GestoreSpeseBudget.Data;
+
+public class ExpenseDbContext(DbContextOptions<ExpenseDbContext> options) : DbContext(options)
 {
-    internal class ExpenseDbContext : DbContext
+    public DbSet<Expense> Expenses => Set<Expense>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        public DbSet<Expense> Expenses { get; set; }
+        base.OnModelCreating(modelBuilder);
 
-        public ExpenseDbContext()
+        modelBuilder.Entity<Expense>(entity =>
         {
-            // Automatically create the local SQLite database file and tables on startup if they do not exist
-            Database.EnsureCreated();
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseSqlite("Data Source=expenses.db");
-        }
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Amount).HasPrecision(18, 2);
+            entity.Property(e => e.Description).HasMaxLength(250).IsRequired();
+        });
     }
 }
