@@ -1,94 +1,91 @@
 # GestoreSpeseBudget - CLI Expense & Budget Manager
 
-Un'applicazione console sviluppata in **C# 12** e **.NET** per la gestione e l'analisi del budget e delle spese personali.
+Un'applicazione console sviluppata in **C# 12** e **.NET 8** per la gestione, l'analisi e il monitoraggio del budget e delle spese personali.
 
-Il progetto è stato sviluppato applicando i principi del **Clean Code** e dell'ingegneria del software, adottando l'architettura **MVC (Model-View-Controller)** e il **Repository Pattern** per disaccoppiare la logica applicativa dai meccanismi di persistenza dei dati.
-
----
-
-## Funzionalità Principali
-
-- **CRUD Completo:**
-  - **Create:** inserimento di una nuova spesa con importo, data odierna automatica, descrizione e categoria.
-  - **Read:** visualizzazione di tutte le spese registrate o filtrate per categoria.
-  - **Update:** modifica mirata di importo e descrizione selezionando l'identificativo (ID).
-  - **Delete:** cancellazione di una spesa per ID e sincronizzazione dell'avanzamento dei record.
-- **Monitoraggio del Budget Mensile:** impostazione di un tetto di spesa mensile con calcolo dinamico del totale speso nel mese corrente, calcolo del saldo residuo e notifica immediata in caso di sforamento del budget.
-- **Riepilogo e Aggregazione per Categoria:** calcolo dei totali aggregati per ciascuna categoria tramite query **LINQ (`GroupBy`)** mappati in un dizionario dedicato.
-- **Esportazione in Formato CSV:** generazione automatica di un file `expenses.csv` formattato con delimitatore punto e virgola (`;`), direttamente compatibile con Microsoft Excel e software di foglio di calcolo.
-- **Interfaccia Console Difensiva:** gestione robusta di tutti gli input da terminale (validazione di interi con limiti di intervallo, gestione dei decimali sia con virgola che con punto, prevenzione di crash da stringhe vuote o formati non validi).
+Il progetto adotta un'**Architettura a Strati (Layered Architecture)**, principi del **Domain-Driven Design (DDD)** e il **Repository Pattern**, disaccoppiando nettamente la logica di business, l'interfaccia utente a riga di comando e la persistenza dei dati.
 
 ---
 
 ## Architettura del Software
 
-Il progetto segue rigorosamente la separazione delle responsabilità:
+La soluzione è strutturata seguendo rigorosamente la separazione delle responsabilità (SRP) e l'inversione delle dipendenze (DIP):
 
 ```text
 GestoreSpeseBudget/
 │
 ├── Models/
-│   └── Expense.cs               # Entità di dominio Expense ed enum Category
+│   ├── Category.cs               # Enum delle categorie di spesa
+│   └── Expense.cs                # Entità di dominio incapsulata (Rich Domain Model)
 │
-├── Controllers/
-│   └── ExpenseController.cs      # Coordinamento, logica applicativa e calcoli LINQ
-│
-├── Views/
-│   └── ConsoleView.cs            # Interfaccia utente a terminale e formattazione dell'output
+├── Services/
+│   └── ExpenseService.cs         # Servizio applicativo e logica di coordinamento budget
 │
 ├── Repositories/
-│   ├── SqliteExpenseRepository.cs # Persistenza relazionale su database SQLite con EF Core
-│   ├── JsonExpenseRepository.cs   # Persistenza alternativa su file JSON tramite System.Text.Json
-│   └── CsvExpenseExporter.cs      # Generatore di esportazione tabellare in formato CSV
+│   ├── IExpenseRepository.cs     # Contratto per l'accesso ai dati e aggregazioni
+│   ├── SqliteExpenseRepository.cs# Implementazione relazionale su SQLite tramite EF Core
+│   ├── IExpenseExporter.cs       # Contratto per l'esportazione dati
+│   └── CsvExpenseExporter.cs     # Esportatore conforme allo standard RFC 4180
 │
 ├── Data/
-│   └── ExpenseDbContext.cs       # Contesto del database Entity Framework Core
+│   └── ExpenseDbContext.cs       # Contesto Entity Framework Core con configurazioni fluent
 │
-└── Program.cs                   # Entry point dell'applicazione (configurazione UTF-8 e Pure DI)
+├── Views/
+│   └── ConsoleView.cs            # Livello di presentazione a terminale e validazione input difensiva
+│
+└── Program.cs                    # Composition Root, Dependency Injection e bootstrap database
 ```
 
 ---
 
-## Tecnologie e Pattern Adottati
+## Caratteristiche e Soluzioni Ingegneristiche
 
-- **Linguaggio e Framework:** C# 12 / .NET 8+
-- **Database e ORM:** **Entity Framework Core (EF Core)** con provider **SQLite** (approccio Code-First con inizializzazione automatica tramite `Database.EnsureCreated()`).
-- **Persistenza Alternativa:** serializzazione/deserializzazione nativa JSON con `System.Text.Json`.
-- **Querying:** utilizzo intensivo di **LINQ** (`.Sum()`, `.Where()`, `.GroupBy()`, `.Max()`, `.Select()`).
-- **Design Pattern e Principi di Progettazione:**
-  - **MVC (Model-View-Controller):** disaccoppiamento totale tra presentazione e logica.
-  - **Repository Pattern:** astrazione completa dell'accesso ai dati.
-  - **Single Responsibility Principle (SRP):** ogni classe ha una sola responsabilità.
-  - **Open/Closed Principle (OCP):** gestione dinamica delle categorie via reflection/enum (`Enum.GetValues<T>()`), consentendo l'estensione senza modifiche alla vista.
-  - **DRY (Don't Repeat Yourself):** unificazione dei metodi di input (`EnterInt`, `EnterDecimal`) e di output (`Print`).
-  - **Pure Dependency Injection:** iniezione del controller nel costruttore della vista a livello di `Program.cs`.
-- **Funzionalità di C# Moderno:**
-  - *Primary Constructors* su modelli e classi di vista
-  - *Collection Expressions* (`[]`) e operatore *Spread* (`..`)
-  - *Switch Expressions* per il mapping dei flussi
-  - *Expression-Bodied Members* (`=>`) per metodi sintetici
-  - Tipo `DateOnly` per la gestione temporale senza orario
+### 1. Dominio Incapsulato (Domain Invariants Protection)
+L'entità `Expense` non adotta il pattern anemico: espone proprietà a mutazione controllata (`private set` / `init`) e metodi di mutazione espliciti (`UpdateDetails`). Lo stato interno dell'oggetto non può mai essere corrotto (importi negativi o descrizioni vuote vengono respinti all'origine).
+
+### 2. Gestione Robusta dell'ORM (EF Core & SQLite)
+- **Ciclo di Vita Sicuro tramite `IDbContextFactory`:** Anziché mantenere istanze a lunga durata, il repository crea istanze effimere (*Unit of Work* usa-e-getta) per azzerare rischi di memory leak e disallineamenti del Change Tracker.
+- **SQL Aggregation Pushdown:** Calcoli come il totale complessivo, i totali mensili e i raggruppamenti per categoria non scaricano intere tabelle in memoria (evitando l'anti-pattern *In-Memory Dumping*), ma delegano il calcolo a SQLite tramite query native `SUM` e `GROUP BY` ($O(1)$ di overhead in memoria).
+- **AsNoTracking:** Applicato su tutte le query in sola lettura per ottimizzare le prestazioni di estrazione.
+
+### 3. Inversion of Control & Dependency Injection
+Tutte le dipendenze sono gestite tramite il container ufficiale `Microsoft.Extensions.DependencyInjection`, consentendo l'estensibilità e la testabilità modulare del software (mocking dei repository e degli exporter).
+
+### 4. Esportazione CSV Conforme a RFC 4180
+L'esportazione in `expenses.csv` adotta la codifica UTF-8 e include un meccanismo deterministico di escaping delle virgolette doppie e dei delimitatori (`;`), garantendo piena compatibilità con Microsoft Excel e altri fogli di calcolo.
+
+### 5. Validazione Difensiva dell'Input Utente
+L'interfaccia a terminale normalizza i separatori decimali (consentendo sia il punto che la virgola indipendentemente dalla `CultureInfo` dell'OS) e valida costantemente gli intervalli di scelta e la non-vacuità delle stringhe per prevenire crash non gestiti a runtime.
+
+---
+
+## Tecnologie Utilizzate
+
+- **Linguaggio:** C# 12
+- **Runtime:** .NET 8.0 SDK (o superiore)
+- **Data Access:** Entity Framework Core 8+ (Provider SQLite)
+- **Dependency Injection:** Microsoft.Extensions.DependencyInjection
+- **Librerie di Supporto:** Microsoft.EntityFrameworkCore.Sqlite
 
 ---
 
 ## Come Avviare il Progetto in Locale
 
 ### Prerequisiti
-- [.NET SDK 8.0](https://dotnet.microsoft.com/download) o superiore installato sul computer.
+- [.NET SDK 8.0](https://dotnet.microsoft.com/download) installato sul sistema.
 
-### Procedura
+### Installazione ed Esecuzione
 
 1. Clona il repository:
    ```bash
    git clone https://github.com/Andr3a19/GestoreSpeseBudget.git
    ```
 
-2. Entra nella cartella di progetto:
+2. Accedi alla cartella del progetto:
    ```bash
    cd GestoreSpeseBudget
    ```
 
-3. Ripristina le dipendenze NuGet:
+3. Ripristina i pacchetti NuGet:
    ```bash
    dotnet restore
    ```
