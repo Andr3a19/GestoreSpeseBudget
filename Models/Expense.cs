@@ -11,30 +11,35 @@ public class Expense
 
     public Expense(decimal amount, DateOnly date, string description, Category category)
     {
-        if (amount <= 0)
-            throw new ArgumentOutOfRangeException(nameof(amount), "L'importo della spesa deve essere maggiore di zero");
-
-        if (string.IsNullOrWhiteSpace(description))
-            throw new ArgumentException("La descrizione non può essere vuota", nameof(description));
-
-        Amount = amount;
+        Amount = ValidateAmount(amount, nameof(amount));
         Date = date;
-        Description = description.Trim();
+        Description = ValidateDescription(description, nameof(description));
         Category = category;
     }
 
+    // Parameterless constructor required by EF Core for entity materialization
     protected Expense() { }
 
     public void UpdateDetails(decimal newAmount, string newDescription)
     {
-        if (newAmount <= 0)
-            throw new ArgumentOutOfRangeException(nameof(newAmount), "L'importo della spesa deve essere maggiore di zero");
+        Amount = ValidateAmount(newAmount, nameof(newAmount));
+        Description = ValidateDescription(newDescription, nameof(newDescription));
+    }
 
-        if (string.IsNullOrWhiteSpace(newDescription))
-            throw new ArgumentException("La descrizione non può essere vuota", nameof(newDescription));
+    private static decimal ValidateAmount(decimal amount, string paramName)
+    {
+        if (amount <= 0)
+            throw new ArgumentOutOfRangeException(paramName, "L'importo della spesa deve essere maggiore di zero");
 
-        Amount = newAmount;
-        Description = newDescription.Trim();
+        return amount;
+    }
+
+    private static string ValidateDescription(string description, string paramName)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+            throw new ArgumentException("La descrizione non può essere vuota", paramName);
+
+        return description.Trim();
     }
 
     public override string ToString() => $"[{Id}] {Date:dd/MM/yyyy} - {Description} | {Amount:C} ({Category})";

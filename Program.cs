@@ -1,4 +1,5 @@
 ﻿using GestoreSpeseBudget.Data;
+using GestoreSpeseBudget.Exporters;
 using GestoreSpeseBudget.Repositories;
 using GestoreSpeseBudget.Services;
 using GestoreSpeseBudget.Views;
@@ -20,21 +21,19 @@ internal static class Program
         services.AddDbContextFactory<ExpenseDbContext>(options =>
             options.UseSqlite("Data Source=expenses.db"));
 
-        services.AddScoped<IExpenseRepository, SqliteExpenseRepository>();
-        services.AddScoped<IExpenseExporter, CsvExpenseExporter>();
-        services.AddScoped<ExpenseService>();
-        services.AddScoped<ConsoleView>();
+        services.AddSingleton<IExpenseRepository, SqliteExpenseRepository>();
+        services.AddSingleton<CsvExpenseExporter>();
+        services.AddSingleton<ExpenseService>();
+        services.AddSingleton<ConsoleView>();
 
-        var serviceProvider = services.BuildServiceProvider();
+        using var serviceProvider = services.BuildServiceProvider();
 
-        using (var scope = serviceProvider.CreateScope())
+        var factory = serviceProvider.GetRequiredService<IDbContextFactory<ExpenseDbContext>>();
+        using (var dbContext = factory.CreateDbContext())
         {
-            var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ExpenseDbContext>>();
-            using var dbContext = factory.CreateDbContext();
             dbContext.Database.EnsureCreated();
         }
 
-        var view = serviceProvider.GetRequiredService<ConsoleView>();
-        view.Start();
+        serviceProvider.GetRequiredService<ConsoleView>().Start();
     }
 }

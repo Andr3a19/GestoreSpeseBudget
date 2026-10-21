@@ -18,7 +18,7 @@ public class ConsoleView(ExpenseService service)
             Console.WriteLine("3. Visualizza totale speso");
             Console.WriteLine("4. Filtra spese per categoria");
             Console.WriteLine("5. Elimina una spesa");
-            Console.WriteLine("6. Budget status");
+            Console.WriteLine("6. Stato del budget");
             Console.WriteLine("7. Riepilogo spese per categoria");
             Console.WriteLine("8. Modifica una spesa");
             Console.WriteLine("9. Esporta in formato CSV");
@@ -42,7 +42,7 @@ public class ConsoleView(ExpenseService service)
                     ShowTotalAmount();
                     break;
                 case 4:
-                    ShowForCategory();
+                    ShowExpensesByCategory();
                     break;
                 case 5:
                     DeleteExpense();
@@ -81,8 +81,9 @@ public class ConsoleView(ExpenseService service)
         var amount = EnterDecimal();
 
         var description = EnterString("\nInserire la descrizione della spesa: ");
+        var category = ChooseCategory();
 
-        service.AddExpense(amount, DateOnly.FromDateTime(DateTime.Today), description, ChooseCategory());
+        service.AddExpense(amount, DateOnly.FromDateTime(DateTime.Today), description, category);
         Console.WriteLine("\nSpesa aggiunta con successo");
     }
 
@@ -91,7 +92,7 @@ public class ConsoleView(ExpenseService service)
         Console.WriteLine($"\nIl totale delle spese è {service.GetTotalAmount():C}");
     }
 
-    private void ShowForCategory()
+    private void ShowExpensesByCategory()
     {
         var category = ChooseCategory();
         var expenses = service.GetExpensesByCategory(category);
@@ -162,28 +163,28 @@ public class ConsoleView(ExpenseService service)
         Console.Write("\nIndicare quale spesa vuoi modificare: ");
         var id = EnterInt(1);
 
+        // Ensures the expense exists before prompting for updated values
+        if (!expenses.Any(e => e.Id == id))
+        {
+            Console.WriteLine($"\nNessuna spesa trovata con ID {id}");
+            return;
+        }
+
         Console.Write("\nInserire il nuovo valore dell'importo: ");
         var amount = EnterDecimal();
 
         var description = EnterString("\nInserire la nuova descrizione della spesa: ");
 
-        if (service.UpdateExpense(id, amount, description))
-            Console.WriteLine("\nSpesa modificata con successo");
-        else
-            Console.WriteLine($"\nNessuna spesa trovata con ID {id}");
+        service.UpdateExpense(id, amount, description);
+        Console.WriteLine("\nSpesa modificata con successo");
     }
 
     private void ExportToCsv()
     {
-        var expenses = service.GetExpenses();
-        if (expenses.Count == 0)
-        {
+        if (service.ExportToCsv())
+            Console.WriteLine("\nFile 'expenses.csv' esportato con successo");
+        else
             Console.WriteLine("\nNessuna spesa presente in archivio: operazione non disponibile");
-            return;
-        }
-
-        service.ExportToCsv();
-        Console.WriteLine("\nFile 'expenses.csv' esportato con successo");
     }
 
     private static void Print(IReadOnlyList<Expense> expenses)
@@ -235,8 +236,13 @@ public class ConsoleView(ExpenseService service)
             var rawInput = Console.ReadLine()?.Trim() ?? string.Empty;
             var normalizedInput = rawInput.Replace(',', '.');
 
-            if (decimal.TryParse(normalizedInput, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var amount) && amount > 0)
-                return amount;
+            if (decimal.TryParse(normalizedInput, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var parsed))
+            {
+                // Rounds to two decimals to represent currency cents accurately
+                var amount = Math.Round(parsed, 2, MidpointRounding.AwayFromZero);
+                if (amount > 0)
+                    return amount;
+            }
 
             Console.WriteLine("Valore inserito non valido");
             Console.Write("Nuovo valore: ");

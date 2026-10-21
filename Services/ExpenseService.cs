@@ -1,9 +1,10 @@
-﻿using GestoreSpeseBudget.Models;
+﻿using GestoreSpeseBudget.Exporters;
+using GestoreSpeseBudget.Models;
 using GestoreSpeseBudget.Repositories;
 
 namespace GestoreSpeseBudget.Services;
 
-public class ExpenseService(IExpenseRepository repository, IExpenseExporter csvExporter)
+public class ExpenseService(IExpenseRepository repository, CsvExpenseExporter csvExporter)
 {
     public decimal MonthlyBudget { get; set; }
 
@@ -30,11 +31,19 @@ public class ExpenseService(IExpenseRepository repository, IExpenseExporter csvE
 
     public decimal CalculateRemainingBudget(decimal monthlyTotal) => MonthlyBudget - monthlyTotal;
 
-    public Dictionary<Category, decimal> GetExpensesSummaryByCategory() =>
+    public IReadOnlyDictionary<Category, decimal> GetExpensesSummaryByCategory() =>
         repository.GetSummaryByCategory();
 
     public bool UpdateExpense(int id, decimal amount, string description) =>
         repository.Update(id, amount, description);
 
-    public void ExportToCsv() => csvExporter.Export(repository.GetAll());
+    public bool ExportToCsv()
+    {
+        var expenses = repository.GetAll();
+        if (expenses.Count == 0)
+            return false;
+
+        csvExporter.Export(expenses);
+        return true;
+    }
 }

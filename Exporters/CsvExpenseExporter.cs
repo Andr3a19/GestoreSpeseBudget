@@ -2,9 +2,9 @@
 using System.Globalization;
 using System.Text;
 
-namespace GestoreSpeseBudget.Repositories;
+namespace GestoreSpeseBudget.Exporters;
 
-public class CsvExpenseExporter(string filePath = "expenses.csv") : IExpenseExporter
+public class CsvExpenseExporter(string filePath = "expenses.csv")
 {
     public void Export(IReadOnlyList<Expense> expenses)
     {

@@ -2,7 +2,7 @@
 
 Un'applicazione console sviluppata in **C# 14** e **.NET 10 (LTS)** per la gestione, l'analisi e il monitoraggio del budget e delle spese personali.
 
-Il progetto adotta un'**Architettura a Strati (Layered Architecture)**, principi del **Domain-Driven Design (DDD)** e il **Repository Pattern**, disaccoppiando nettamente la logica di business, l'interfaccia utente a riga di comando e la persistenza dei dati.
+Il progetto adotta un'**Architettura a Strati (Layered Architecture)** e il **Repository Pattern**, disaccoppiando nettamente la logica di business, l'interfaccia utente a riga di comando e la persistenza dei dati.
 
 ---
 
@@ -22,8 +22,9 @@ GestoreSpeseBudget/
 │
 ├── Repositories/
 │   ├── IExpenseRepository.cs     # Contratto per l'accesso ai dati e aggregazioni
-│   ├── SqliteExpenseRepository.cs# Implementazione relazionale su SQLite tramite EF Core
-│   ├── IExpenseExporter.cs       # Contratto per l'esportazione dati
+│   └── SqliteExpenseRepository.cs# Implementazione relazionale su SQLite tramite EF Core
+│
+├── Exporters/
 │   └── CsvExpenseExporter.cs     # Esportatore conforme allo standard RFC 4180
 │
 ├── Data/
@@ -48,7 +49,7 @@ L'entità `Expense` non adotta il pattern anemico: espone proprietà a mutazione
 - **AsNoTracking:** Applicato su tutte le query in sola lettura per ottimizzare le prestazioni di estrazione.
 
 ### 3. Inversion of Control & Dependency Injection
-Tutte le dipendenze sono gestite tramite il container ufficiale `Microsoft.Extensions.DependencyInjection`, consentendo l'estensibilità e la testabilità modulare del software (mocking dei repository e degli exporter).
+Tutte le dipendenze sono gestite tramite il container ufficiale `Microsoft.Extensions.DependencyInjection`. Il repository è nascosto dietro un contratto (`IExpenseRepository`), così da poter essere sostituito con un fake nei test senza toccare la logica del servizio applicativo.
 
 ### 4. Esportazione CSV Conforme a RFC 4180
 L'esportazione in `expenses.csv` adotta la codifica UTF-8 e include un meccanismo deterministico di escaping delle virgolette doppie e dei delimitatori (`;`), garantendo piena compatibilità con Microsoft Excel e altri fogli di calcolo.

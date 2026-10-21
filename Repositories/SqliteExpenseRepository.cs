@@ -9,19 +9,14 @@ public class SqliteExpenseRepository(IDbContextFactory<ExpenseDbContext> context
     public IReadOnlyList<Expense> GetAll()
     {
         using var context = contextFactory.CreateDbContext();
-        return [.. context.Expenses.AsNoTracking().OrderBy(e => e.Date)];
+        // Ensures deterministic sorting order when multiple expenses share the same date
+        return [.. context.Expenses.AsNoTracking().OrderBy(e => e.Date).ThenBy(e => e.Id)];
     }
 
     public IReadOnlyList<Expense> GetByCategory(Category category)
     {
         using var context = contextFactory.CreateDbContext();
-        return [.. context.Expenses.AsNoTracking().Where(e => e.Category == category).OrderBy(e => e.Date)];
-    }
-
-    public Expense? GetById(int id)
-    {
-        using var context = contextFactory.CreateDbContext();
-        return context.Expenses.AsNoTracking().FirstOrDefault(e => e.Id == id);
+        return [.. context.Expenses.AsNoTracking().Where(e => e.Category == category).OrderBy(e => e.Date).ThenBy(e => e.Id)];
     }
 
     public decimal GetTotalAmount()
@@ -40,7 +35,7 @@ public class SqliteExpenseRepository(IDbContextFactory<ExpenseDbContext> context
             .Sum(e => (decimal?)e.Amount) ?? 0m;
     }
 
-    public Dictionary<Category, decimal> GetSummaryByCategory()
+    public IReadOnlyDictionary<Category, decimal> GetSummaryByCategory()
     {
         using var context = contextFactory.CreateDbContext();
         return context.Expenses
