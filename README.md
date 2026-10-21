@@ -1,6 +1,6 @@
 # GestoreSpeseBudget - CLI Expense & Budget Manager
 
-Un'applicazione console sviluppata in **C# 12** e **.NET 8** per la gestione, l'analisi e il monitoraggio del budget e delle spese personali.
+Un'applicazione console sviluppata in **C# 14** e **.NET 10 (LTS)** per la gestione, l'analisi e il monitoraggio del budget e delle spese personali.
 
 Il progetto adotta un'**Architettura a Strati (Layered Architecture)**, principi del **Domain-Driven Design (DDD)** e il **Repository Pattern**, disaccoppiando nettamente la logica di business, l'interfaccia utente a riga di comando e la persistenza dei dati.
 
@@ -60,9 +60,9 @@ L'interfaccia a terminale normalizza i separatori decimali (consentendo sia il p
 
 ## Tecnologie Utilizzate
 
-- **Linguaggio:** C# 12
-- **Runtime:** .NET 8.0 SDK (o superiore)
-- **Data Access:** Entity Framework Core 8+ (Provider SQLite)
+- **Linguaggio:** C# 14
+- **Runtime:** .NET 10.0 SDK (LTS)
+- **Data Access:** Entity Framework Core 10+ (Provider SQLite)
 - **Dependency Injection:** Microsoft.Extensions.DependencyInjection
 - **Librerie di Supporto:** Microsoft.EntityFrameworkCore.Sqlite
 
@@ -71,7 +71,7 @@ L'interfaccia a terminale normalizza i separatori decimali (consentendo sia il p
 ## Come Avviare il Progetto in Locale
 
 ### Prerequisiti
-- [.NET SDK 8.0](https://dotnet.microsoft.com/download) installato sul sistema.
+- [.NET SDK 10.0](https://dotnet.microsoft.com/download) installato sul sistema.
 
 ### Installazione ed Esecuzione
 
