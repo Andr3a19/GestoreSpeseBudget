@@ -69,6 +69,12 @@ L'interfaccia a terminale normalizza i separatori decimali (consentendo sia il p
 
 ---
 
+## Trade-off e Decisioni Architetturali
+
+Le scelte di design, le alternative scartate e le motivazioni tecniche alla base di questo progetto (es. l'uso di `IDbContextFactory`, l'arrotondamento monetario, l'astrazione del Repository) sono documentate in dettaglio nel file [TRADEOFFS.md](TRADEOFFS.md) presente nella root del repository.
+
+---
+
 ## Come Avviare il Progetto in Locale
 
 ### Prerequisiti
